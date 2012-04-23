@@ -25,7 +25,6 @@ activate)
 	echo Updating Munin configuration
 	cat >/etc/munin/munin-conf.d/${HOSTNAME}.conf <<EOF
 [$FQDN]
-address $HOSTNAME
 use_node_name yes
 EOF
 
@@ -42,7 +41,7 @@ remove)
 
 	echo Updating Munin configuration
 	rm /etc/munin/munin-conf.d/${HOSTNAME}.conf
-	
+
 	;;
 help)
 	cat <<END
