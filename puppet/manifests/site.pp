@@ -2,7 +2,7 @@
 # MODULES #
 ###########
 
-define apt::key($ensure, $apt_key_url = 'http://www.example.com/apt/keys') {
+define apt::key($ensure, $apt_key_url) {
 	case $ensure {
 		'present' : {
 			exec { "apt-key present $name":
@@ -241,6 +241,12 @@ class ssh {
 }
 
 class ntp {
+	# TODO: shouldn't Debian handle this package incompatibility?
+	package { 'ntpdate' :
+		ensure		=> absent,
+		before		=> Package['ntp']
+	}
+
 	package { 'ntp' :
 		ensure		=> installed
 	}
