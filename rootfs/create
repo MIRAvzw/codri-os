@@ -1,0 +1,67 @@
+#!/bin/sh
+set -e -x
+
+#
+# Initialization
+#
+
+# Check if root
+if [ "$(id -u)" != "0" ]; then
+  echo "This script must be run as root" 1>&2
+  exit 1
+fi
+
+# Read profile parameter
+if [ "" = "$1" ] ; then 
+  echo "You need to specify a profile" 1>&2
+fi
+if [ -d "$1" ] ; then
+  PROFILE="$1"
+else
+  echo "Profile $PROFILE not found" 1>&2
+  exit 1
+fi
+
+# Read rootfs path
+if [ "" = "$2" ] ; then 
+  echo "You need to specify a path to the target rootfs" 1>&2
+  exit 1
+else
+  if [ -e "$2" ] ; then
+    mkdir -p $2
+  fi
+  ROOTFS=`readlink -m $2`
+fi
+
+# Read settings
+if [ -e $PROFILE/main.conf ] ; then
+  . $PROFILE/main.conf
+else
+  echo "Profile lacks main settings" 1>&2
+  exit 1
+fi
+
+
+#
+# Main
+#
+
+multistrap -a $ARCH -d $ROOTFS -f $PROFILE/multistrap.conf
+
+# Add QEMU static binary
+# TODO: compare $ARCH to current arch, and select proper one
+cp /usr/bin/qemu-arm-static $ROOTFS/usr/bin
+
+# Execute set-up script (if any)
+if [ -e $PROFILE/setup.sh ] ; then
+  cp $PROFILE/setup.sh $ROOTFS/tmp
+  LC_ALL=C LANG=C chroot $ROOTFS /tmp/setup.sh
+  rm $ROOTFS/tmp/setup.sh
+else
+  # Configure all packages
+  set +e
+  LC_ALL=C LANG=C chroot $ROOTFS dpkg --configure -a
+  
+  # Set the root password
+  chroot $ROOTFS passwd
+fi

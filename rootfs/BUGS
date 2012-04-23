@@ -1,0 +1,13 @@
+x11-common weigert te configureren:
+	chroot $ROOTFS mkdir -p /var/lib/x11/
+
+dash weigert te configureren:	
+	chroot $ROOTFS /var/lib/dpkg/info/dash.preinst install
+
+start: Unable to connect to Upstart: Failed to connect to socket /com/ubuntu/upstart: Connection refused
+	chroot $ROOTFS dpkg-divert --local --rename --add /sbin/initctl
+	chroot $ROOTFS ln -s /bin/true /sbin/initctl
+NOTE: undo this BEFORE booting the system, it'll subtly break everything
+	chroot $ROOTFS rm /sbin/initctl
+	chroot $ROOTFS dpkg-divert --local --remove /sbin/initctl
+

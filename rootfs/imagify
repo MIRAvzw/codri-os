@@ -1,0 +1,125 @@
+#!/bin/bash
+set -e -x
+
+#
+# Initialization
+#
+
+# Check if root
+if [ "$(id -u)" != "0" ]; then
+  echo "This script must be run as root" 1>&2
+  exit 1
+fi
+
+# Read profile parameter
+if [ "" = "$1" ] ; then 
+  echo "You need to specify a profile" 1>&2
+fi
+if [ -d "$1" ] ; then
+  PROFILE="$1"
+else
+  echo "Profile $PROFILE not found" 1>&2
+  exit 1
+fi
+
+# Read rootfs path
+if [ "" = "$2" ] ; then 
+  echo "You need to specify a path to the target rootfs" 1>&2
+  exit 1
+else
+  if [ -e "$2" ] ; then
+    ROOTFS=`readlink -m $2`
+  else 
+    echo "Root dir $2 not found" 1>&2
+    exit 1
+  fi
+fi
+
+# Read image path
+if [ "" = "$3" ] ; then 
+  echo "You need to specify a path to the resulting image" 1>&2
+  exit 1
+else
+  IMAGE=`readlink -m $3`
+fi
+
+# Read settings
+if [ -e $PROFILE/main.conf ] ; then
+  . $PROFILE/main.conf
+else
+  echo "Profile lacks main settings" 1>&2
+  exit 1
+fi
+
+
+#
+# Main
+#
+
+# If none specified, get the minimal image size
+if [ -z $SECTORS ] || [ $SECTORS -eq 0 ] ; then
+  SECTORS=$(( $(du --block-size=512 --summarize ${ROOTFS} | awk '{print $1}') + 16*1024 ))
+fi
+
+# Create and partition the image
+rm -f $IMAGE.*
+dd if=/dev/zero of=${IMAGE}.img bs=512 count=0 seek=$SECTORS
+yes | parted ${IMAGE}.img mktable msdos
+parted ${IMAGE}.img <<EOF
+mkpart primary ext2 2048s 16MB
+mkpart primary ext4 16MB 100%
+toggle 1 boot
+quit
+EOF
+
+# Attach, format and mount the boot subpartition
+# TODO: check for free loop device
+BOOTSTART=$(parted -m ${IMAGE}.img unit B print | egrep "^1:" | cut -d ":" -f 2 | sed 's/B$//')
+BOOTSIZE=$(parted -m ${IMAGE}.img unit B print | egrep "^1:" | cut -d ":" -f 4 | sed 's/B$//')
+losetup --offset $BOOTSTART --sizelimit $BOOTSIZE /dev/loop0 ${IMAGE}.img
+mkfs.ext2 /dev/loop0
+test -d /media/Boot || mkdir /media/Boot
+e2label /dev/loop0 "Boot"
+mount /dev/loop0 /media/Boot
+
+# Attach, format and mount the root subpartition
+# TODO: check for free loop device
+ROOTSTART=$(parted -m ${IMAGE}.img unit B print | egrep "^2:" | cut -d ":" -f 2 | sed 's/B$//')
+ROOTSIZE=$(parted -m ${IMAGE}.img unit B print | egrep "^2:" | cut -d ":" -f 4 | sed 's/B$//')
+losetup --offset $ROOTSTART --sizelimit $ROOTSIZE /dev/loop1 ${IMAGE}.img
+mkfs.ext4 /dev/loop1
+test -d /media/Root || mkdir /media/Root
+e2label /dev/loop1 "Root"
+mount /dev/loop1 /media/Root
+
+# Deploy all files
+./deploy $PROFILE $ROOTFS
+
+# Check the image
+sync
+e2fsck -f /dev/loop0
+e2fsck -f /dev/loop1
+
+# Detach the subpartition loop devices
+sync
+losetup -d /dev/loop0
+losetup -d /dev/loop1
+
+# Create a informative file
+cat >${IMAGE}.info <<EOF
+date:	$( date )
+size:	$(( $SECTORS * 512 ))
+md5:	$( md5sum ${IMAGE}.img | awk '{print $1}' )
+EOF
+
+# Pack the image
+IMAGE=$(readlink -m ../images/EfikaMX_flasher/turtleos)
+IMAGEDIR=$(dirname $IMAGE)
+IMAGEFILE=$(basename $IMAGE)
+cd ${IMAGEDIR}
+if [ ! -z "$PACK" ] ; then
+  case "$PACK" in
+  tar)
+    tar --create --verbose --sparse --remove-files --file ${IMAGEFILE}.tar ${IMAGEFILE}.img ${IMAGEFILE}.info
+  esac
+fi

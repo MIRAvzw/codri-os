@@ -1,0 +1,12 @@
+This profile provides a rootfs which flashes an image at '/turtleos.tar' to the
+internal SSD at '/dev/sda'.
+
+NOTE: it isn't a complete profile, but is rather to be used as overlay on a regular
+profile. First, create your hardware-dependent profile (e.g. the EfikaMX one), copy
+the rootfs, and reconfigure that copy with this profile. This'll copy the additional
+files required to flash the image, over the already working base image.
+
+After that, enter the flasher rootfs using chroot, and perform the following tasks:
+ - remove unneeded services (puppet, openssh-client, cron, watchdog)
+ - remove unneeded initialization scripts (firstboot.sh)
+ - install parted and pv

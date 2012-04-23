@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# Initialize the system on the first boot
+if test -f /firstboot.sh
+then
+	. /firstboot.sh
+	rm /firstboot.sh
+fi
+
+exit 0

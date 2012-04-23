@@ -1,0 +1,36 @@
+#!/bin/sh
+set -e
+PATH=$PATH:/usr/local/bin
+
+# Catch any errors
+trap onExit EXIT
+onExit() {
+	ledcontrol blink red
+}
+
+# Get the image information
+DATE=$(tar --extract --to-stdout --file /turtleos.tar turtleos.info | grep date | cut -f 2)
+SIZE=$(tar --extract --to-stdout --file /turtleos.tar turtleos.info | grep size | cut -f 2)
+
+# Flash the image
+ledcontrol blink yellow
+echo "Flashing image generated at $DATE"
+tar --extract --to-stdout --file /turtleos.tar turtleos.img | pv --size $SIZE | dd of=/dev/sda
+
+# Extend the last partition to span the SSD
+PARTITION=$(parted -m /dev/sda unit s print | tail -n 1 | cut -d ":" -f 1)
+START=$(parted -m /dev/sda unit s print | tail -n 1 | cut -d ":" -f 2)
+TYPE=$(parted -m /dev/sda unit s print | tail -n 1 | cut -d ":" -f 5)
+parted <<EOF
+rm $PARTITION
+mkpart primary $TYPE $START 100%
+quit
+EOF
+e2fsck -f /dev/sda$PARTITION
+resize2fs /dev/sda$PARTITION
+
+# Power down
+ledcontrol auto
+poweroff
+
+exit 0

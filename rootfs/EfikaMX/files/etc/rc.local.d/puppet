@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# Initiate a Puppet check
+/usr/sbin/puppetd --onetime --logdest syslog --waitforcert 60
+
+exit 0

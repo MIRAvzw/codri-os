@@ -1,0 +1,12 @@
+# /etc/modules: kernel modules to load at boot time.
+#
+# This file contains the names of kernel modules that should be loaded
+# at boot time, one per line. Lines beginning with "#" are ignored.
+
+### Start of Genesi Efika MX /etc/modules additions
+
+# load gpu module by default. You need this for accelerated graphics.
+gpu
+
+### End of Genesi Efika MX /etc/modules additions
+

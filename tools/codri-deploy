@@ -1,0 +1,73 @@
+#!/usr/bin/perl
+
+
+#
+# Initialization
+#
+
+use strict;
+use warnings;
+
+use Switch;
+
+my @rsync = ("rsync", "--archive", "--delete");
+
+my %files = (
+    # Puppet
+    '/srv/puppet/'                  => 'puppet/files/',
+    '/etc/puppet/puppet.conf'       => 'puppet/puppet.conf',
+    '/etc/puppet/manifests/'        => 'puppet/manifests/',
+    '/etc/puppet/modules/'          => 'puppet/modules/',
+    '/etc/puppet/templates/'        => 'puppet/templates/',
+
+    # Tools
+    '/usr/local/bin/codri-clients'  => 'tools/codri-clients'
+);
+
+my %excludes = (
+    '/srv/puppet/'                  => [
+        '/etc/openvpn/keys'
+    ]
+);
+
+
+#
+# Main
+#
+
+my $mode = shift;
+switch ($mode) {
+    case "gather" {
+        map { die("$0: failure to gather, couldn't find '$_'.\n") unless (-e $_) } (%files);
+        foreach my $system (keys %files) {
+            my $repository = $files{$system};
+            my @exclude = map { ("--exclude", $_) } @{$excludes{$system}||[]};
+            system(@rsync, @exclude, $system, $repository);
+        }
+    }
+
+    case "scatter" {
+        map { die("$0: failure to scatter, couldn't find '$_'.\n") unless (-e $_) } (values %files);
+        foreach my $system (keys %files) {
+            my $repository = $files{$system};
+            my @exclude = map { ("--exclude", $_) } @{$excludes{$system}||[]};
+            system(@rsync, @exclude, $repository, $system);
+        }
+    }
+
+    case "help" {
+        print <<END
+Usage: $0 MODE
+
+Main modes:
+  help             display this help
+  gather           gather files from the local system to the repository
+  scatter          scatter files from the repository to the local system
+END
+;
+    }
+
+    else {
+        print "$0: invalid usage, use 'help' to see all options\n";
+    }
+}

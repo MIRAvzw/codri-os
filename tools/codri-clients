@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# Make sure only root can run our script
+if [ "$(id -u)" != "0" ]; then
+   echo "This script must be run as root" 1>&2
+   exit 1
+fi
+
+# Process all actions
+case "$1" in
+list)
+	echo "List of clients (FQDNs):"
+    puppet cert list --all
+    ;;
+activate)
+	[ "$#" -eq 3 ] || { echo Please provided the hostname and domain of the client to activate; exit 1; }
+
+	HOSTNAME=$2
+	DOMAIN=$3
+	FQDN=$HOSTNAME.$DOMAIN
+
+	echo Signing Puppet certificate
+	puppet cert sign $FQDN >/dev/null
+
+    ;;
+remove)
+	[ "$#" -eq 3 ] || { echo Please provided the FQDN of the client to remove; exit 1; }
+
+	HOSTNAME=$2
+	DOMAIN=$3
+	FQDN=$HOSTNAME.$DOMAIN
+
+	echo Cleaning Puppet certificate
+	puppet cert clean $FQDN >/dev/null
+	
+	;;
+help)
+	cat <<END
+Usage: $0 MODE [ARGUMENTS...]
+
+Main modes:
+  help                      display this help
+  list                      show a list of all outstanding clients
+  activate HOSTNAME DOMAIN  activate a client
+  remove HOSTNAME DOMAIN    remove a client
+END
+	;;
+*) echo $0: invalid usage, use 'help' to see all options
+	;;
+esac

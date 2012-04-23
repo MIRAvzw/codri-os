@@ -1,0 +1,15 @@
+Short term
+##########
+
+Change all email-addresses to a dedicated alert one
+
+
+Long term
+#########
+
+Move the service definitions into separate modules
+
+Split the site manifest into production, testing and development
+- http://puppetlabs.com/blog/git-workflow-and-puppet-environments/
+
+Automate OpenVPN certificate generation (Puppet autosign post-run hook?)

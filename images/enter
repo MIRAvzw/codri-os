@@ -1,0 +1,44 @@
+#!/bin/bash
+set -x
+
+#
+# Initialization
+#
+
+# Check if root
+if [ "$(id -u)" != "0" ]; then
+  echo "This script must be run as root" 1>&2
+  exit 1
+fi
+
+# Read rootfs path
+if [ "" = "$1" ] ; then 
+  echo "You need to specify a path to the target rootfs" 1>&2
+  exit 1
+else
+  if [ -e "$1" ] ; then
+    ROOTFS="$1"
+  else 
+    echo "Root dir $1 not found" 1>&2
+    exit 1
+  fi
+fi
+
+
+#
+# Main
+#
+
+# Mount folders
+mount -t proc proc $ROOTFS/proc/
+mount -t sysfs sys $ROOTFS/sys/
+mount -o bind /dev $ROOTFS/dev/
+
+# Resolv.conf
+cp -L /etc/resolv.conf $ROOTFS/etc/resolv.conf
+
+# Enter the chroot
+LANG=C LC_ALL=C chroot $ROOTFS
+
+# Unmount folders
+umount $ROOTFS/{proc,sys,dev}

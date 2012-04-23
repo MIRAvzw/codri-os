@@ -1,0 +1,148 @@
+#!/usr/bin/perl
+
+#
+# Initialization
+#
+
+use strict;
+use warnings;
+
+use Switch;
+use Time::HiRes qw/usleep/;
+
+my ($red, $green, $blue) = map { '/sys/devices/platform/leds-gpio/leds/efikamx:' . $_ } qw/red green blue/;
+my %colourmap;
+
+
+#
+# Routines
+#
+
+sub set_generic {
+    my $device = shift;
+    my $key = shift;
+    my $value = shift;
+    
+    open(my $write, '>', "$device/$key") || die("Couldn't open $device: $!");
+    print $write $value;
+    close($write);
+}
+
+sub set_triggers {
+    my @triggers = @_;
+    
+    set_generic($red, "trigger", $triggers[0] || "none");
+    set_generic($green, "trigger", $triggers[1] || "none");
+    set_generic($blue, "trigger", $triggers[2] || "none");
+}
+
+sub set_colour {
+    my @rgb = @_;
+    use Data::Dumper;
+    
+    set_generic($red, "brightness", $rgb[0]);
+    set_generic($green, "brightness", $rgb[1]);
+    set_generic($blue, "brightness", $rgb[2]);
+}
+
+sub parse_colour {
+    my $colour = shift;
+    
+    if (not %colourmap) {
+        open(my $read, '<', '/usr/share/X11/rgb.txt');
+        while (<$read>) {
+            if ($_ =~ m{^\s*(\d+)\s+(\d+)\s+(\d+)\s+(\w+)$}i) {
+                $colourmap{lc($4)} = [$1, $2, $3];
+            }
+        }
+        close($read);
+    }
+    
+    my $rgb = $colourmap{lc($colour)} || die("Didn't recognize colour $colour\n");
+    return @$rgb;
+}
+
+sub read_pid {
+    if (-e '/var/run/ledcontrol.pid') {
+        open(my $read, '<', '/var/run/ledcontrol.pid');
+        my $pid = <$read>;
+        close($read);
+        
+        return $pid;
+    }
+}
+
+sub write_pid {
+    my $pid = shift || $$;
+    open(my $write, '>', '/var/run/ledcontrol.pid');
+    print $write $pid;
+    close($write);
+}
+
+
+#
+# Main
+#
+
+# Kill running processes
+if (my $pid = read_pid()) {
+    kill 15, $pid;
+}
+
+# Manage operation mode
+my $mode = shift;
+switch ($mode) {
+    case "auto" {
+        set_colour(0, 0, 0);  
+        set_triggers("ide-disk", "default-on", "mmc0");
+    }
+    case "off" {
+        set_colour(0, 0, 0);  
+        set_triggers();
+    }
+    case "set" {
+        my $colour = shift || die("Specify a colour\n");
+        my @rgb = parse_colour($colour);
+        set_triggers();
+        set_colour(@rgb);
+    }
+    case "blink" {
+        my $colour1 = shift || die("Specify a colour\n");
+        my $colour2 = shift || "black";
+        my $time1 = shift || 500;
+        my $time2 = shift || 500;
+        
+        my @rgb1 = parse_colour($colour1);
+        my @rgb2 = parse_colour($colour2);
+        
+        my $pid = fork();
+        if ($pid) {
+            exit(0);
+        }
+        write_pid();
+        
+        while (1) {
+            set_colour(@rgb1);
+            usleep(1000*$time1);
+            set_colour(@rgb2);
+            usleep(1000*$time2);
+        }
+    }
+    case "help" {
+        print <<END
+Usage: $0 MODE
+
+Main modes:
+  help                               display this help
+  auto                               automatically respond to system triggers
+  off                                disable completely
+  set COLOUR                         display a single colour
+  blink COLOUR [COLOUR TIME TIME]    blink one or two colours (time in µsecs)
+END
+;
+    }
+
+    else {
+        print "$0: invalid usage, use 'help' to see all options\n";
+    }
+}
