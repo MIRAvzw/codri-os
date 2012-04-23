@@ -14,11 +14,7 @@ my @rsync = ("rsync", "--archive", "--delete");
 
 my %files = (
     # Puppet
-    '/srv/puppet/'                  => 'puppet/files/',
-    '/etc/puppet/puppet.conf'       => 'puppet/puppet.conf',
-    '/etc/puppet/manifests/'        => 'puppet/manifests/',
-    '/etc/puppet/modules/'          => 'puppet/modules/',
-    '/etc/puppet/templates/'        => 'puppet/templates/',
+    '/etc/puppet/'                  => 'puppet/',
 
     # Tools
     '/usr/local/bin/codri-clients'  => 'tools/codri-clients'

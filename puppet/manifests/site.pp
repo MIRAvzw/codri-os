@@ -275,12 +275,22 @@ class munin {
 		ensure		=> installed
 	}
 
+	file { '/etc/munin/munin-node.conf' :
+		owner		=> 'root',
+		group		=> 'root',
+		mode		=> '0644',
+		source		=> 'puppet://puppet.codri.local/files/etc/munin/munin-node.conf',
+		require		=> Package['munin-node'],
+		notify		=> Service['munin-node']
+	}
+
 	file { '/etc/munin/plugins' :
 		ensure		=> directory,
 		recurse		=> true,
 		purge		=> true,
 		force		=> true,
-		require		=> Package['munin-node']
+		require		=> Package['munin-node'],
+		notify		=> Service['munin-node']
 	}
 
 	munin::plugin {
