@@ -4,14 +4,3 @@ iface lo inet loopback
 auto eth0
 iface eth0 inet dhcp
 
-# TODO: migrate this to interfaces.d as soon as ifupdown 0.7
-#       _really_ lands in unstable (supports the "source" stanza
-#       from alpha-4 on)
-#
-#       This'd allow us to refine the network using Puppet
-# http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=159884#36
-# http://packages.debian.org/unstable/ifupdown
-auto wlan0
-iface wlan0 inet static
-address 10.13.37.1
-netmask 255.255.255.0
