@@ -403,12 +403,26 @@ class xserver($device) {
 	}
 }
 
+class alsa {
+	package { 'alsa' :
+		name		=> ['alsa-base', 'alsa-utils'],
+		ensure		=> installed,
+		notify		=> Execl['alsactl init']
+	}
+
+	exec { 'alsactl init' :
+		command		=> '/usr/sbin/alsactl init',
+		refreshonly	=> true
+	}
+}
+
 class codri-client {
 	# Local user which will run the application
 
 	user { 'codri' :
 		ensure		=> present,
 		managehome	=> true,
+		groups		=> 'audio',
 		shell		=> '/bin/false'
 	}
 
@@ -571,7 +585,8 @@ node /efikamx-......\./ {
 
 	class {
 		'xserver' :			stage => application, device => 'efikamx';
-		'codri-client' :	stage => application, require => Class['xserver'];
+		'alsa' :			stage => application;
+		'codri-client' :	stage => application, require => Class['alsa', 'xserver'];
 	}
 
 
