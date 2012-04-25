@@ -407,11 +407,26 @@ class alsa {
 	package { 'alsa' :
 		name		=> ['alsa-base', 'alsa-utils'],
 		ensure		=> installed,
-		notify		=> Execl['alsactl init']
+		notify		=> Exec['alsactl init']
 	}
 
 	exec { 'alsactl init' :
 		command		=> '/usr/sbin/alsactl init',
+		refreshonly	=> true,
+		returns		=> 99		# FIXME: alsactl init shouldn't only detect something generic
+	}
+
+	file { '/var/lib/alsa/asound.state' :
+		owner		=> 'root',
+		group		=> 'root',
+		mode		=> '0644',
+		source		=> 'puppet://puppet.codri.local/files/var/lib/alsa/asound.state',
+		require		=> Exec['alsactl init'],
+		notify		=> Exec['alsactl restore']
+	}
+
+	exec { 'alsactl restore' :
+		command		=> '/usr/sbin/alsactl restore',
 		refreshonly	=> true
 	}
 }
