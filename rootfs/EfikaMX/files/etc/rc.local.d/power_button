@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# Test the GPIO-keys input for events
+testing=0
+evtest /dev/input/event0 | while read event ; do
+	if [ $testing -eq 0 ] && [ "$event" = "Testing ... (interrupt to exit)" ] ; then
+		testing=1
+	elif [ $testing -eq 1 ] ; then
+		case "$event" in
+		*code\ *\(KEY_POWER\)* )
+			case "$event" in
+			*value\ 1* )
+				/sbin/poweroff
+				;;
+			esac
+			;;
+		esac
+	fi
+done &
+
+exit 0
