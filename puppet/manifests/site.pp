@@ -294,15 +294,7 @@ class munin {
 	}
 
 	munin::plugin {
-		'processes' :
-			notify => Service['munin-node'] ;
-		'uptime' :
-			notify => Service['munin-node'] ;
-		'fw_forwarded_local' :
-			notify => Service['munin-node'] ;
 		'memory' :
-			notify => Service['munin-node'] ;
-		'fw_packets' :
 			notify => Service['munin-node'] ;
 		'users' :
 			notify => Service['munin-node'] ;
@@ -311,16 +303,9 @@ class munin {
 			notify => Service['munin-node'] ;
 		'load' :
 			notify => Service['munin-node'] ;
-		'ping_' :
-			config => "env.host 172.27.0.1",
-			notify => Service['munin-node'] ;
 		'ntp_offset' :
 			notify => Service['munin-node'] ;
 		'cpu' :
-			notify => Service['munin-node'] ;
-		'fw_conntrack' :
-			notify => Service['munin-node'] ;
-		'vmstat' :
 			notify => Service['munin-node'] ;
 		'if_err_eth0' :
 			ensure => "if_err_",
@@ -420,6 +405,7 @@ class alsa {
 		owner		=> 'root',
 		group		=> 'root',
 		mode		=> '0644',
+		replace		=> false,	# TODO: check this
 		source		=> 'puppet://puppet.codri.local/files/var/lib/alsa/asound.state',
 		require		=> Exec['alsactl init'],
 		notify		=> Exec['alsactl restore']
