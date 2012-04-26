@@ -324,6 +324,20 @@ class munin {
 	}
 }
 
+class sudo {
+        package { 'sudo' :
+                ensure          => installed
+        }
+
+        file { '/etc/sudoers' :
+                owner           => 'root',
+                group           => 'root',
+                mode            => '0440',
+                source          => 'puppet://puppet.codri.local/files/etc/sudoers',
+                require         => Package['sudo']
+        }
+}
+
 class puppet {
 	$minute = generate('/usr/bin/env', 'bash', '-c', 'printf $((RANDOM%60+0))')
 	cron { 'puppet' :
@@ -418,16 +432,28 @@ class alsa {
 }
 
 class codri-client {
+	# Codri client application
+
+	package { 'fonts' :
+		name		=> ['ttf-freefont', 'ttf-dejavu'],
+		ensure		=> installed,
+		before		=> Package['codri-client']
+	}
+
+	package { 'codri-client' :
+		ensure		=> latest
+	}
+
+
 	# Local user which will run the application
 
 	user { 'codri' :
 		ensure		=> present,
-		managehome	=> true,
 		groups		=> 'audio',
-		shell		=> '/bin/false'
+		require		=> Package['codri-client']
 	}
 
-	file { '/home/codri/.forward' :
+	file { '/var/lib/codri/.forward' :
 		owner		=> 'codri',
 		group		=> 'codri',
 		mode		=> '0644',
@@ -435,21 +461,21 @@ class codri-client {
 		require		=> User['codri']
 	}
 
-	file { '/home/codri/.xsession' :
+	file { '/var/lib/codri/.xsession' :
 		owner		=> 'codri',
 		group		=> 'codri',
 		mode		=> '0755',
 		content		=> "#!/bin/sh\ncodri-client",
-		require		=> User['codri'],
+		require		=> [Package['codri-client'], File['/etc/default/nodm']],
 		notify		=> Exec['xsession-reload']
 	}
 
-	file { '/home/codri/.ratpoisonrc' :
+	file { '/var/lib/codri/.ratpoisonrc' :
 		owner		=> 'codri',
 		group		=> 'codri',
 		mode		=> '0644',
-		source		=> 'puppet://puppet.codri.local/files/home/codri/.ratpoisonrc',
-		notify		=> Exec['xsession-reload']
+		source		=> 'puppet://puppet.codri.local/files/var/lib/codri/.ratpoisonrc',
+		before		=> Package['xsession']
 	}
 
 
@@ -500,21 +526,6 @@ class codri-client {
 		command		=> '/bin/sh -c "sleep 5 && /usr/sbin/invoke-rc.d nodm restart"',
 		refreshonly	=> true,
 		require		=> Service['xsession']
-	}
-
-
-	# Codri client application
-
-	package { 'fonts' :
-		name		=> ['ttf-freefont', 'ttf-dejavu'],
-		ensure		=> installed,
-		before		=> Package['codri-client']
-	}
-
-	package { 'codri-client' :
-		ensure		=> latest,
-		require		=> User['codri'],
-		notify		=> Exec['xsession-reload']
 	}
 }
 
@@ -578,6 +589,7 @@ node /efikamx-......\./ {
 		'ssh' :				stage => services;
 		'ntp' :				stage => services;
 		'munin' :			stage => services;
+		'sudo' :			stage => services;
 		'puppet' :			stage => services;
 	}
 
