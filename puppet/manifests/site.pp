@@ -64,6 +64,24 @@ define munin::plugin (
 	}
 }
 
+define line($file, $line, $ensure = 'present') {
+	case $ensure {
+		present: {
+			exec { "/bin/echo '${line}' >> '${file}'":
+				unless => "/bin/grep -qFx '${line}' '${file}'"
+			}
+		}
+		absent: {
+			exec { "/bin/grep -vFx '${line}' '${file}' | /usr/bin/tee '${file}' > /dev/null 2>&1":
+			  onlyif => "/bin/grep -qFx '${line}' '${file}'"
+			}
+		}
+		default : {
+			err ( "unknown ensure value ${ensure}" )
+		}
+	}
+}
+
 
 
 ###########
@@ -179,34 +197,21 @@ class rsyslog {
 	}
 }
 
-class postfix {
-	package { 'postfix' :
-		name		=> [ 'postfix', 'bsd-mailx' ],
-		ensure		=> installed
+class mta {
+	file { '/tmp/mta.preseed' :
+		content		=> template("debian/mta.preseed.erb")
 	}
 
-	file { '/etc/postfix/main.cf' :
-		owner		=> 'root',
-		group		=> 'root',
-		mode		=> '0644',
-		content		=> template("etc/postfix/main.cf.erb"),
-		require		=> Package['postfix'],
-		notify		=> Service['postfix']
+	package { 'mta' :
+		name			=> [ 'dma', 'bsd-mailx' ],
+		ensure			=> installed,
+		responsefile	=> '/tmp/mta.preseed',
+		require			=> File['/tmp/mta.preseed']
 	}
 
-	file { '/root/.forward' :
-		owner		=> 'root',
-		group		=> 'root',
-		mode		=> '0644',
-		content		=> 'admin@codri.local'
-	}
-
-	service { 'postfix' :
-		ensure		=> running,
-		enable		=> true,
-		hasrestart	=> true,
-		hasstatus	=> true,
-		require		=> Package['postfix']
+	line { 'root forward' :
+		file		=> '/etc/aliases',
+		line		=> 'root	admin@codri.local'
 	}
 }
 
@@ -585,7 +590,7 @@ node /efikamx-......\./ {
 
 	class {
 		'rsyslog' :			stage => services;
-		'postfix' :			stage => services;
+		'mta' :				stage => services;
 		'ssh' :				stage => services;
 		'ntp' :				stage => services;
 		'munin' :			stage => services;
