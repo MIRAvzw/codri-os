@@ -198,7 +198,7 @@ class postfix {
 		owner		=> 'root',
 		group		=> 'root',
 		mode		=> '0644',
-		content		=> 'tim.besard@gmail.com'
+		content		=> 'admin@codri.local'
 	}
 
 	service { 'postfix' :
