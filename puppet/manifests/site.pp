@@ -359,54 +359,6 @@ class puppet {
 # Application
 #
 
-class xserver($device) {
-	$packages =	[ 'xserver-xorg', 'xserver-xorg-core',
-				  'xserver-xorg-input-evdev',
-				  'xserver-xorg-video-fbdev', 'xinit',
-				  'libgl1-mesa-dri', 'libgl1-mesa-glx']
-
-	case $device {
-		'efikamx' : {
-			$xserver::packages += 'xserver-xorg-video-imx'
-
-			file { '/etc/X11/xorg.conf.d' :
-				owner		=> 'root',
-				group		=> 'root',
-				mode		=> '0755',
-				ensure		=> directory,
-				require		=> Package['xserver']
-			}
-
-			file { '/etc/X11/xorg.conf.d/drivers.conf' :
-				owner		=> 'root',
-				group		=> 'root',
-				mode		=> '0644',
-				source		=> 'puppet://puppet.codri.local/files/etc/X11/xorg.conf.d/drivers.conf',
-				require		=> Package['xserver']
-			}
-		}
-		default: {
-			fail "Unknown device type"
-		}
-	}
-	
-	package { 'xserver' :
-		name		=> $packages,
-		ensure		=> installed
-	}
-
-
-	# DPMS blanking
-	
-	file { '/etc/X11/xorg.conf.d/blanking.conf' :
-		owner		=> 'root',
-		group		=> 'root',
-		mode		=> '0644',
-		source		=> 'puppet://puppet.codri.local/files/etc/X11/xorg.conf.d/blanking.conf',
-		require		=> Package['xserver']
-	}
-}
-
 class codri-client {
 	# Codri client application
 
@@ -573,8 +525,7 @@ node /efikamx-......\./ {
 	# Application
 
 	class {
-		'xserver' :			stage => application, device => 'efikamx';
-		'codri-client' :	stage => application, require => Class['xserver'];
+		'codri-client' :	stage => application;
 	}
 
 
