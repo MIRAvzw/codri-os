@@ -393,7 +393,7 @@ class codri-client {
 		owner		=> 'codri',
 		group		=> 'codri',
 		mode		=> '0755',
-		content		=> "#!/bin/sh\ncodri-client",
+		content		=> "#!/bin/sh\npulseaudio --start &\ncodri-client",
 		require		=> [Package['codri-client'], File['/etc/default/nodm']],
 		notify		=> Exec['xsession-reload']
 	}
