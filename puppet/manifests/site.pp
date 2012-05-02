@@ -211,7 +211,7 @@ class mta {
 
 	line { 'root forward' :
 		file		=> '/etc/aliases',
-		line		=> 'root	admin@codri.local'
+		line		=> 'root:	admin@codri.local'
 	}
 }
 
@@ -379,14 +379,6 @@ class codri-client {
 		ensure		=> present,
 		groups		=> 'audio',
 		require		=> Package['codri-client']
-	}
-
-	file { '/var/lib/codri/.forward' :
-		owner		=> 'codri',
-		group		=> 'codri',
-		mode		=> '0644',
-		content		=> 'root',
-		require		=> User['codri']
 	}
 
 	file { '/var/lib/codri/.xsession' :
