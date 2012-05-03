@@ -276,7 +276,7 @@ class ntp {
 
 class munin {
 	package { 'munin-node' :
-		name		=> [ 'munin-node', 'libnet-cidr-perl' ],
+		name		=> [ 'munin-node', 'munin-plugins-core', 'libnet-cidr-perl' ],
 		ensure		=> installed
 	}
 
@@ -359,16 +359,34 @@ class puppet {
 # Application
 #
 
-class codri-client {
-	# Codri client application
-
+class fonts {
 	package { 'fonts' :
-		name		=> ['ttf-freefont', 'ttf-dejavu'],
-		ensure		=> installed,
-		before		=> Package['codri-client']
+		name		=> ['fontconfig', 'fontconfig-config', 'ttf-freefont', 'ttf-dejavu', 'ttf-liberation'],
+		ensure		=> installed
 	}
 
+
+	# Font configuration
+
+	file { '/etc/fonts/conf.d/10-autohint.conf' :
+		ensure		=> 'link',
+		target		=> '/etc/fonts/conf.avail/10-autohint.conf',
+		require		=> Package['fonts']
+	}
+
+	file { '/etc/fonts/conf.d/10-sub-pixel-rgb.conf' :
+		ensure		=> 'link',
+		target		=> '/etc/fonts/conf.avail/10-sub-pixel-rgb.conf',
+		require		=> Package['fonts']
+	}
+}
+
+class codri-client {
 	package { 'codri-client' :
+		ensure		=> latest
+	}
+
+	package { 'ratpoison' :
 		ensure		=> latest
 	}
 
@@ -385,8 +403,8 @@ class codri-client {
 		owner		=> 'codri',
 		group		=> 'codri',
 		mode		=> '0755',
-		content		=> "#!/bin/sh\npulseaudio --start &\ncodri-client",
-		require		=> [Package['codri-client'], File['/etc/default/nodm']],
+		source		=> 'puppet://puppet.codri.local/files/var/lib/codri/.xsession',
+		require		=> Package['codri-client', 'ratpoison'],
 		notify		=> Exec['xsession-reload']
 	}
 
@@ -395,14 +413,13 @@ class codri-client {
 		group		=> 'codri',
 		mode		=> '0644',
 		source		=> 'puppet://puppet.codri.local/files/var/lib/codri/.ratpoisonrc',
-		before		=> Package['xsession']
+		before		=> Package['ratpoison']
 	}
+}
 
-
-	# X session management
-
+class xsession {
 	package { 'xsession' :
-		name		=> ['nodm', 'ratpoison', 'unclutter'],
+		name		=> ['nodm', 'unclutter'],
 		ensure		=> installed
 	}
 	
@@ -519,7 +536,9 @@ node /efikamx-......\./ {
 	# Application
 
 	class {
-		'codri-client' :	stage => application;
+		'fonts' :			stage => application;
+		'codri-client' :	stage => application, require => Class['fonts'];
+		'xsession' :		stage => application, require => Class['codri-client'];
 	}
 
 
