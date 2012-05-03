@@ -483,6 +483,8 @@ class monit {
 # NODES #
 #########
 
+File { backup => false, }
+
 node /efikamx-......\./ {
 	# Stages
 
