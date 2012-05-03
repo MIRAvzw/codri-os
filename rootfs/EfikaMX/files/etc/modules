@@ -10,6 +10,7 @@ gpu
 
 # load soc audio module by default. You need this for audio.
 snd_soc_imx_3stack_sgtl5000
+snd-soc-imx-ssi
 
 ### End of Genesi Efika MX /etc/modules additions
 
