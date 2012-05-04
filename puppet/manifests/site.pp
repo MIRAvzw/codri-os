@@ -387,7 +387,7 @@ class codri-client {
 	}
 
 	package { 'ratpoison' :
-		ensure		=> latest
+		ensure		=> installed
 	}
 
 
