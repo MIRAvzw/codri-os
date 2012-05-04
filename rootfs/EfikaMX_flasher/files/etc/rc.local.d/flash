@@ -9,13 +9,13 @@ onExit() {
 }
 
 # Get the image information
-DATE=$(tar --extract --to-stdout --file /turtleos.tar turtleos.info | grep date | cut -f 2)
-SIZE=$(tar --extract --to-stdout --file /turtleos.tar turtleos.info | grep size | cut -f 2)
+DATE=$(tar --extract --to-stdout --file /image.tar image.info | grep date | cut -f 2)
+SIZE=$(tar --extract --to-stdout --file /image.tar image.info | grep size | cut -f 2)
 
 # Flash the image
 ledcontrol blink yellow
 echo "Flashing image generated at $DATE"
-tar --extract --to-stdout --file /turtleos.tar turtleos.img | pv --size $SIZE | dd of=/dev/sda
+tar --extract --to-stdout --file /image.tar image.img | pv --size $SIZE | dd of=/dev/sda
 
 # Extend the last partition to span the SSD
 PARTITION=$(parted -m /dev/sda unit s print | tail -n 1 | cut -d ":" -f 1)

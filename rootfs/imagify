@@ -113,7 +113,6 @@ md5:	$( md5sum ${IMAGE}.img | awk '{print $1}' )
 EOF
 
 # Pack the image
-IMAGE=$(readlink -m ../images/EfikaMX_flasher/turtleos)
 IMAGEDIR=$(dirname $IMAGE)
 IMAGEFILE=$(basename $IMAGE)
 cd ${IMAGEDIR}

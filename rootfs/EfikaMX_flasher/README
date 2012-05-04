@@ -1,4 +1,4 @@
-This profile provides a rootfs which flashes an image at '/turtleos.tar' to the
+This profile provides a rootfs which flashes an image at '/image.tar' to the
 internal SSD at '/dev/sda'.
 
 NOTE: it isn't a complete profile, but is rather to be used as overlay on a regular
